@@ -1,0 +1,90 @@
+
+<style>
+form {
+    border: 3px solid #f1f1f1;
+}
+
+input[type=text], input[type=password] {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 14px 20px;
+    margin: 8px 0;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+
+.cancelbtn {
+    width: auto;
+    padding: 10px 18px;
+    background-color: #f44336;
+}
+
+.imgcontainer {
+    text-align: center;
+    margin: 24px 0 12px 0;
+}
+
+img.avatar {
+    width: 40%;
+    border-radius: 50%;
+}
+
+.container {
+    padding: 16px;
+}
+
+span.psw {
+    float: right;
+    padding-top: 16px;
+}
+@media screen and (max-width: 300px) {
+    span.psw {
+       display: block;
+       float: none;
+    }
+    .cancelbtn {
+       width: 100%;
+    }
+}
+</style>
+<body>
+
+<h2>Order Form</h2>
+
+<form (submit)="login(username.value,password.value)">
+  <div class="container">
+    <label for="username"><b>Username</b></label>
+    <input type="text" placeholder="Enter sym" #username>
+    <label for="password"><b>Password</b></label>
+    <input type="password" placeholder="Price" #password>
+        
+    <button type="submit">Send</button>
+  </div>
+  <h3>Token:{{msg}}</h3>
+</form>
+<form (submit)="putValue(symbol.value, price.value)">
+  <div class="container">
+    <label for="symbol"><b>Symbol</b></label>
+    <input type="text" placeholder="Enter sym" value={{value1.symbol}} #symbol>
+    <label for="price"><b>Price</b></label>
+    <input type="text" placeholder="Price" value={{value1.price}} #price>
+        
+    <button type="submit">Send</button>
+  </div>
+</form>
+<h3 *ngFor="let stock of value">{{stock.symbol}}</h3>
+</body>

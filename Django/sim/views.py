@@ -1,65 +1,79 @@
 from django.shortcuts import render,get_object_or_404
+from urllib.request import build_opener, HTTPCookieProcessor, Request
 from django.contrib.auth.models import User, Group
-from rest_framework.renderers import JSONRenderer
-from .serializers import UserSerializer, GroupSerializer, GainerSerializer, OrderSerializer
-from .nse import Nse
-from .models import Stockspecific,Orderbook
+from daychangers.models import Orderbook, Margin
 from rest_framework.response import Response
+from rest_framework import generics
 from rest_framework import status
+import django_filters
+from django_filters.rest_framework import DjangoFilterBackend
+from .exception import CsrfExemptSessionAuthentication
+from .serializers import OrderSerializer,OrderDetailSerializer, OrderCreateSerializer
 from rest_framework.views import APIView
+from rest_framework.authentication import SessionAuthentication , BasicAuthentication
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from rest_framework.decorators import api_view
+from rest_framework.generics import (
+    ListAPIView,
+    RetrieveAPIView,
+    UpdateAPIView,
+    DestroyAPIView,
+    CreateAPIView, 
+    RetrieveUpdateAPIView, 
+    ListCreateAPIView,RetrieveUpdateDestroyAPIView)
+from rest_framework.permissions import (
+    AllowAny,
+    IsAuthenticated,
+    IsAdminUser,
+    IsAuthenticatedOrReadOnly
+    )
+from rest_framework.filters import SearchFilter,OrderingFilter
 
+class PostListAPIView(ListAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [BasicAuthentication,JSONWebTokenAuthentication]
+    
+    def get_queryset(self):
+        #query=self.request.GET.get("client_id")
+        queryset=Orderbook.objects.filter(client_id=self.request.user).order_by('id')
+        return queryset
+        
+class DetailListAPIView(RetrieveAPIView):
+    queryset=Orderbook.objects.all()
+    serializer_class = OrderDetailSerializer
+    lookup_field='id'
+    lookup_url_kwarg="id"
 
+class PostUpdateAPIView(RetrieveUpdateAPIView):
+    queryset=Orderbook.objects.all()
+    serializer_class = OrderSerializer
+    lookup_field='id'
+    lookup_url_kwarg="id"       
 
-class work(APIView):
+class PostDeleteAPIView(RetrieveUpdateDestroyAPIView):
+    queryset=Orderbook.objects.all()
+    serializer_class = OrderSerializer
+    lookup_field='id'
+    lookup_url_kwarg="id"   
 
-    @api_view(['GET','POST'])
-    def UserViewSet(request):
-        """
-        API endpoint that allows users to be viewed or edited.
-        """
+class PostCreateAPIView(CreateAPIView):
+    queryset=Orderbook.objects.all()
+    serializer_class = OrderCreateSerializer
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [BasicAuthentication,JSONWebTokenAuthentication]
+    def perform_create(self,serializer):
+        serializer.save(client_id=self.request.user)
+            
 
-        queryset = User.objects.all().order_by('-date_joined')
-        serializer_class = UserSerializer(queryset,many=True)
-        return Response(serializer_class.data)
+class PermissionView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [BasicAuthentication,JSONWebTokenAuthentication]
 
-    @api_view(['GET'])
-    def GroupViewSet(request):
-        """
-        API endpoint that allows groups to be viewed or edited.
-        """
-        queryset = Group.objects.all()
-        serializer_class = GroupSerializer(queryset,many=True)
-        return Response(serializer_class.data)
+    def get(self, request,format=None):
+        data = {
+            'username': request.user.username,
+            'password':request.user.password,
 
-    @api_view(['GET','POST'])
-    def Gainer(request):
-    """ Updating the top gainer list in real time """
-        nse = Nse()
-        gainer=nse.get_top_gainers()
-        value=Stockspecific.objects.all()
-        if value:
-            i=1
-            for stock in gainer:
-                obj = Stockspecific.objects.get(id=i)
-                obj.symbol =stock['symbol']
-                obj.highPrice=stock['highPrice']
-                obj.ltp=stock['ltp']
-                obj.save()
-                i=i+1
-        else:    
-            for stock in gainer:
-                query=Stockspecific(symbol=stock['symbol'],openPrice=stock['openPrice'],highPrice=stock['highPrice'],ltp=stock['ltp'])
-                query.save()
-
-        queryset=Stockspecific.objects.all()
-        serializer_class = GainerSerializer(queryset,many=True)
-        return Response(serializer_class.data)
-
-    @api_view(['GET','PUT', 'DELETE', 'PATCH'])   
-    def data(request):
-        """ Fetching the order book of user """
-        user = request.user
-        queryset=Orderbook.objects.filter(client_id=user)    
-        serializer_class = OrderSerializer(queryset,many=True)
-        return Response(serializer_class.data)
+        }
+        return Response(data)

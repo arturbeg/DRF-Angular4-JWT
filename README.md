@@ -1,1 +1,1 @@
-# Django-Angular4-JWT
+# DRF-Angular4-JWT
